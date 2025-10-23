@@ -1,2 +1,4 @@
-# quadrotor
-基于STM32+FreeRTOS的四轴飞行器
+# 基于STM32+FreeRTOS的四轴飞行器
+
+## 项目预览
+![项目展示](制作过程纪念/成品展示.jpg)
