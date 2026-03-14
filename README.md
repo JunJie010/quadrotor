@@ -36,6 +36,7 @@
 ***
 ## 关于项目整体架构
 项目整体分为飞控项目和遥控项目
+![整体框架](制作过程/整体框架.png)
 ### 软件
 ![软件架构](制作过程/软件架构.png)
 其中Middle为中间层，为项目移植FreeRTOS实时操作系统，进行任务调度
@@ -43,10 +44,82 @@
 MDK-ARM为编译器，此次在这里我们选择了KEIL5作为编译器
 
 INTERFACE为接口层，此处主要存放各个硬件设备的底层驱动代码
+![硬件驱动](制作过程/硬件驱动.png)
+DRONE_TASK为任务调度层，在这里对各个任务的优先级进行调度及编写代码
 
+DRIVES为驱动层，放置了STM32F103C8T6的固件库
 
+CORE为核心层，放置了HAL库生成的驱动文件
+![HAL库](制作过程/HAL库生成.png)
+![驱动](制作过程/驱动.png)
+COMMON为中间层，放置了公共的结构体方便调用，同时串级PID代码，一阶低通滤波，卡尔曼滤波，四元数姿态解算的代码都放置在这里
 
+APP为业务层，主要存放数据处理和电机驱动的PWM配置
+***
+## 关于电源任务
+IP5305T 是一款集成升压转换器、锂电池充电管理、电池电量指示的多功能电源管理SOC，为移动电源提供完整的电源解决方案。
+![电源电路](制作过程/电源电路.png)
+```
+void Power_Task(void *param)       //定义电源任务函数
+{
+    printf("power task start");
+    while (1)
+    {
+        // 再来一个10000ms的延时 意思是每隔10s钟 拉低一次
+        vTaskDelay(10000);              //这个代码原本在断开后，此处前置不然相当于两次短按等于关机
 
+        // 拉低，回到电源模式
+        HAL_GPIO_WritePin(IP5305T_KEY_GPIO_Port, IP5305T_KEY_Pin, GPIO_PIN_RESET);
+        // delay的时间按照手册来说 得在30ms以上
+        vTaskDelay(100);
+        // 再断开1，让它回到高阻态模式
+        HAL_GPIO_WritePin(IP5305T_KEY_GPIO_Port, IP5305T_KEY_Pin, GPIO_PIN_SET);
+    }                        //开机后待机能够撑过1分钟都不关机
+}
+```
+***
+## 关于灯控任务
+需求：根据4个LED灯来显示遥控状态和飞控状态，其中前两个灯表示遥控状态，后俩个灯表示飞控状态
+![灯控需求](制作过程/灯控需求.jpg)
+![LED](制作过程/LED电路.png)
+LED驱动采用句柄化封装，显得代码更加简洁
+![句柄封装](制作过程/句柄封装.png)
+在公共层定义枚举类型，定义飞机遥控和飞控状态
+```
+typedef enum          //定义遥控状态，为枚举类型
+{
+    eRC_UNCONNECTED,    //未连接
+    eRC_CONNECTED       //已连接
+} RC_Status_e;
+
+typedef enum          //定义飞机状态，为枚举类型
+{
+    eDrone_IDLE,           //定义空闲状态
+    eDrone_NORMAL,         //定义正常工作状态
+    eDrone_HOLD_HIGHT,     //定义定高状态
+    eDrone_FAULT           //定义故障状态
+} Drone_Status_e;
+```
+再通过switch函数实现灯光效果,其中慢闪烁和快闪烁可以用当前时间减去上一次的时间来判断，不会占用太多CPU内存，代码更好
+```
+case eDrone_IDLE:            //空闲状态  后两灯每隔1s闪烁(慢闪)
+            // toggle一次后延时，可以实现效果，但是延长了刷新率
+            if (xTaskGetTickCount() - bottom_led_last_toggle_tick >= 1000)    //用当前的时间减去上一次的时间
+            {                                           
+                Int_LED_Toggle(&led_left_bottom);
+                Int_LED_Toggle(&led_right_bottom);
+                bottom_led_last_toggle_tick = xTaskGetTickCount();      //翻转后更新以下当前的时间
+            }               
+            break;
+        case eDrone_NORMAL:          //正常状态  后两灯每隔100ms闪烁(快闪)
+            if (xTaskGetTickCount() - bottom_led_last_toggle_tick >= 100)
+            {
+                Int_LED_Toggle(&led_left_bottom);
+                Int_LED_Toggle(&led_right_bottom);
+                bottom_led_last_toggle_tick = xTaskGetTickCount();
+            }
+```
+***
 
 
 >再次感谢原项目作者的杰出工作
