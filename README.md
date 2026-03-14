@@ -159,9 +159,60 @@ case eDrone_IDLE:            //空闲状态  后两灯每隔1s闪烁(慢闪)
 [按键测试视频](https://www.bilibili.com/video/BV158w8zwExV/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 [摇杆测试视频](https://www.bilibili.com/video/BV1etw8zYEqZ/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 ***
-
-
-
+## 关于通讯任务和状态机任务
+通讯任务需求：通过2.4G无线通信将摇杆的数据传输到飞控板上，为了防止别人联上我们的飞机，需要DIY通讯协议，防止撞车
+状态机任务需求：
+![油门解锁状态机需求](制作过程/油门解锁状态机需求.jpg)
+![飞行状态机需求](制作过程/飞行状态机需求.jpg)
+![收发电路](制作过程/收发电路.png)
+### DIY通讯协议
+在遥控端，发送的数据缓冲包定义三个地址,作为第一层防护，再定义一种和校验逻辑作为第二层防护
+```
+ // DIY无人机通讯协议，第一层防护
+    tx_buffer[10] = DIY_DRONE_ADDR0;
+    tx_buffer[11] = DIY_DRONE_ADDR1;
+    tx_buffer[12] = DIY_DRONE_ADDR2;            //无人机通讯软件协议，防止撞车
+// 再发明一种和校验逻辑，第二层防护
+    uint32_t check_sum = 0;                     //定义校验和
+    for (uint8_t i = 0; i < 13; i++)
+    {
+        check_sum += tx_buffer[i];
+    } 
+    tx_buffer[13] = check_sum >> 24;
+    tx_buffer[14] = check_sum >> 16;
+    tx_buffer[15] = check_sum >> 8;
+    tx_buffer[16] = check_sum & 0xff;            //无人机校验和通讯协议，防止撞车
+```
+对应飞控端，接受的数据缓冲包需要先进行校验，在通过两层的防护措施后，才接受数据，这样确保接受数据不会出错
+```
+if (res == 0)          // 如果接收到数据
+    {                      //第一步进行无人机DIY通讯协议地址鉴定，防止撞车，第一层防护
+        if ((rx_buffer[10] == DIY_DRONE_ADDR0) && (rx_buffer[11] == DIY_DRONE_ADDR1) && (rx_buffer[12] == DIY_DRONE_ADDR2))
+        {                  //第二步进行和校验，防止撞车，第二层防护
+            uint32_t check_sum = 0;
+            for (uint8_t i = 0; i < 13; i++)
+            {
+                check_sum += rx_buffer[i];
+            }
+            if (check_sum == ((rx_buffer[13] << 24) | (rx_buffer[14] << 16) | (rx_buffer[15] << 8) | rx_buffer[16]))    
+            {
+                // 才认为这是合规数据，通过了两层DIY无人机通讯协议的防护，才进行数据解析
+                rc_data->throttle = (rx_buffer[0] << 8) | rx_buffer[1];
+                rc_data->pitch = (rx_buffer[2] << 8) | rx_buffer[3];
+                rc_data->roll = (rx_buffer[4] << 8) | rx_buffer[5];
+                rc_data->yaw = (rx_buffer[6] << 8) | rx_buffer[7];
+                rc_data->off = rx_buffer[8];
+                rc_data->hold_height = rx_buffer[9];
+                return eData_Valid;             // 数据有效，返回数据有效枚举值
+            }
+        }
+    }
+```
+### 测试视频
+[通讯联调测试视频](https://www.bilibili.com/video/BV1K2w8znEAb/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+[油门解锁状态机测试视频](https://www.bilibili.com/video/BV1PDw8zmE57/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+[飞行状态机测试视频](https://www.bilibili.com/video/BV1sSw8zEEVW/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+***
 
 
 >再次感谢原项目作者的杰出工作
