@@ -6,7 +6,7 @@
 >在此感谢原项目作者的杰出工作
 
 ## 项目预览
-![项目展示](制作过程纪念/成品展示.jpg)
+![项目展示](制作过程/成品展示.jpg)
 [跳转项目演示视频](https://www.bilibili.com/video/BV1RCw4zRELT/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 
 ## 项目功能
