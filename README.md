@@ -120,6 +120,48 @@ case eDrone_IDLE:            //空闲状态  后两灯每隔1s闪烁(慢闪)
             }
 ```
 ***
+## 关于按键摇杆任务
+需求：实现6个按键的8种效果，且与摇杆联动；摇杆根据位置输出0-1000的数据
+![按键需求](制作过程/按键需求.jpg)
+![按键摇杆电路](制作过程/按键摇杆电路.png)
+按键判断较为简单，采用简单的按键轮询方式即可，而摇杆ADC采集到的数据需要经过处理
+```
+// 2. 解决反向问题，思路：用4095减去当前值
+    RCdata->pitch = 4095 - RCdata->pitch;
+    RCdata->roll = 4095 - RCdata->roll;
+    RCdata->yaw = 4095 - RCdata->yaw;            //注意偏航角没有反向的问题
+    RCdata->throttle = 4095 - RCdata->throttle;
+
+    // 3. 值域 0~1000，思路：当前值/ 4095 * 1000，为了避免浮点运算导致除完好永远为0，我们改成  当前值 * 1000 / 4095，
+    RCdata->pitch = RCdata->pitch * 1000 / 4095;
+    RCdata->roll = RCdata->roll * 1000 / 4095;
+    RCdata->yaw = RCdata->yaw * 1000 / 4095;
+    RCdata->throttle = RCdata->throttle * 1000 / 4095;                 //也可以当前值/4095.0 * 1000
+
+    // 4. 减去校准偏移量                // 编写中点对齐代码，校正摇杆姿态初始角度，初始偏移量为0，摇杆校正时给偏移量赋值
+    RCdata->pitch -= pitch_offset;
+    RCdata->roll -= roll_offset;
+    RCdata->yaw -= yaw_offset;
+    RCdata->throttle -= throttle_offset;
+
+    // 5. 俯仰加上我们的微调数据        // 添加微调代码，实现按键微调
+    RCdata->pitch += pitch_adjust;         
+    RCdata->roll += roll_adjust;
+
+    // 6. 值域保护 (0~1000)          //即使校正后，摇杆数据依然是波动的，如果摇杆波动后数据小于偏移数据，则会出现负值，所以需要进行值域保护
+    RCdata->pitch = LIMIT(RCdata->pitch, 0, 1000);
+    RCdata->roll = LIMIT(RCdata->roll, 0, 1000);
+    RCdata->yaw = LIMIT(RCdata->yaw, 0, 1000);
+    RCdata->throttle = LIMIT(RCdata->throttle, 0, 1000);
+    taskEXIT_CRITICAL();
+```
+### 测试视频
+[按键测试视频](https://www.bilibili.com/video/BV158w8zwExV/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+[摇杆测试视频](https://www.bilibili.com/video/BV1etw8zYEqZ/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+***
+
+
+
 
 
 >再次感谢原项目作者的杰出工作
