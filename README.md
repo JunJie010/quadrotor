@@ -260,9 +260,97 @@ void App_Display_ShowProgressBar(uint8_t temp,
 加入角度-角速度串级PID控制系统，测试其俯仰，横滚，偏航的平衡效果
 
 加入高度-速度串级PID控制系统，测试其定高飞行的控制效果
-![MPU6050电路](制作过程/MPU6050电路.png)
-![激光测高电路](制作过程/激光测高电路.png)
 ![8520电机电路](制作过程/8520电机电路.png)
+### MPU6050获取原始姿态数据
+![MPU6050电路](制作过程/MPU6050电路.png)
+[MPU6050测试视频](https://www.bilibili.com/video/BV1VQwMzqEQH/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+[MPU6050原始数据干扰测试视频]()
+可以发现，在启动电机后，获得的原始数据出现大范围波动，不能直接用来做数据处理，需进行滤波处理
+### 滤波处理
+我们对角速度采用一阶低通RC滤波，而加速度(干扰幅度较大)采用卡尔曼滤波处理
+[滤波处理测试视频]()
+```
+int16_t Common_LPF(int16_t current_measure, int16_t last_output, float alpha)
+{
+    return (int16_t)(alpha * current_measure + (1 - alpha) * last_output);
+}
+
+KalmanFilter_Struct kfs[3] = {
+    {0.02, 0, 0, 0, 0.001, 0.543},
+    {0.02, 0, 0, 0, 0.001, 0.543},
+    {0.02, 0, 0, 0, 0.001, 0.543}};
+int16_t Common_Filter_KalmanFilter(KalmanFilter_Struct *kf, int16_t input)
+{
+    kf->Now_P = kf->LastP + kf->Q;
+    kf->Kg = kf->Now_P / (kf->Now_P + kf->R);
+    kf->out = kf->out + kf->Kg * (input - kf->out);
+    kf->LastP = (1 - kf->Kg) * kf->Now_P;
+    return kf->out;
+}
+```
+### 四元数姿态解算得到无人机欧拉角
+[四元数姿态解算测试视频]()
+
+### 光流测距
+![激光测高电路](制作过程/激光测高电路.png)
+[光流测距测试视频]()
+
+### 串级PID控制系统设计
+该项目设计了两个串级控制系统，分别是平衡(外环角度内环角速度)和定高(外环高度内环速度)
+![飞控](制作过程/飞控串级PID.jpg)
+![定高](制作过程/定高串级PID.jpg)
+
+### PID及其参数整定
+一般先确定Kp，后Ki，最后是Kd；
+调参数，给阶跃，看波形
+
+PID参数数量级确定：
+三个参数的数量级，一般由输出范围和输入范围的比值确定；
+即MV的范围除以SP得到； 
+
+PID极性判断：(正反控制器的选择)
+控制器正反作用选择正确，执行器进行调节，若选择错误，执行器往相反方向运动，调节出现问题；
+实测法：
+先将Kp,Ki,Kd置0，将PV调节到SP附近，给一点点Kp,也就是给PID启动一点，手动调节PV与SP偏移，观察执行器输出方向，是否有调节SP与PV相近，没有调节则极性相反
+
+纯比例项控制：
+随着Kp的增大，P调节作用增强，稳态误差减小。当Kp非常大时候，系统趋于不稳定，且稳态误差仍无法消除
+
+引入积分项：
+先将Kp调到系统稳定临界时，此时存在稳态误差；
+随着Ki的增大，PI调节作用累加，稳态误差消除；
+
+是否要加Kd项：
+给阶跃后，如果PV靠近SP的趋势放缓，呈逐渐收敛，慢慢贴合的趋势，可以不用加入Kd；
+如果PV靠近SP时，变化迅猛，呈一头扎向目标的趋势，或者靠近目标时，变化曲线没有放缓，需要加入Kd防止超调；
+Kd的作用是增加阻尼，防止系统超调，增加系统稳定性；
+但是阻尼过大，会出现提前波动，不稳定情况
+```
+void Common_Single_PID(Single_PID_Handle_t *pid_handle)             //定义单环PID函数
+{
+    float current_error = pid_handle->target - pid_handle->measure;         //定义当前误差等于目标值减去测量值
+    
+    float p_part = pid_handle->kp * current_error;                                                //比例项
+
+    pid_handle->sum += current_error * pid_handle->dt;       //积分和
+    float i_part = pid_handle->ki * pid_handle->sum;                                              //积分项
+
+    float d_part = pid_handle->kd * (current_error - pid_handle->last_error) / pid_handle->dt;    //微分项
+
+    pid_handle->out = p_part + i_part + d_part;                                                   //输出等于三项之和
+
+    pid_handle->last_error = current_error;          //更新上一次误差
+}
+
+void Common_Serial_PID(Single_PID_Handle_t *outter_pid, Single_PID_Handle_t *inner_pid)       //定义串级PID函数
+{
+    Common_Single_PID(outter_pid);             // 先算外环PID 产生输出值
+    inner_pid->target = outter_pid->out;       // 将外环PID的输出值作为内环PID的目标值
+    Common_Single_PID(inner_pid);              // 再算内环PID 产生最终输出值
+}
+```
+由于这是一个对称的四旋翼，所以只需要调出俯仰角的内外环PID参数，横滚角和偏航角的PID参数也是一样的
+### 参数整定测试视频
 
 
 
