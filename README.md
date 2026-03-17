@@ -177,8 +177,8 @@ case eDrone_IDLE:            //空闲状态  后两灯每隔1s闪烁(慢闪)
 状态机任务需求：
 ![油门解锁状态机需求](制作过程/油门解锁状态机需求.jpg)
 ![飞行状态机需求](制作过程/飞行状态机需求.jpg)
-![收发电路](制作过程/收发电路.png)
 ### DIY通讯协议
+![收发电路](制作过程/收发电路.png)
 在遥控端，发送的数据缓冲包定义三个地址,作为第一层防护，再定义一种和校验逻辑作为第二层防护
 ```
  // DIY无人机通讯协议，第一层防护
@@ -276,12 +276,14 @@ void App_Display_ShowProgressBar(uint8_t temp,
 ![8520电机电路](制作过程/8520电机电路.png)
 ### MPU6050获取原始姿态数据
 ![MPU6050电路](制作过程/MPU6050电路.png)
+
 [MPU6050测试视频](https://www.bilibili.com/video/BV1VQwMzqEQH/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
-[MPU6050原始数据干扰测试视频]()
+[MPU6050原始数据干扰测试视频](https://www.bilibili.com/video/BV1u3wmzME5K/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 可以发现，在启动电机后，获得的原始数据出现大范围波动，不能直接用来做数据处理，需进行滤波处理
 ### 滤波处理
 我们对角速度采用一阶低通RC滤波，而加速度(干扰幅度较大)采用卡尔曼滤波处理
-[滤波处理测试视频]()
+
+[滤波处理测试视频](https://www.bilibili.com/video/BV1u3wmzMEAR/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 ```
 int16_t Common_LPF(int16_t current_measure, int16_t last_output, float alpha)
 {
@@ -302,11 +304,12 @@ int16_t Common_Filter_KalmanFilter(KalmanFilter_Struct *kf, int16_t input)
 }
 ```
 ### 四元数姿态解算得到无人机欧拉角
-[四元数姿态解算测试视频]()
+[四元数姿态解算测试视频](https://www.bilibili.com/video/BV1u3wmzMEGY/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 
 ### 光流测距
 ![激光测高电路](制作过程/激光测高电路.png)
-[光流测距测试视频]()
+
+[光流测距测试视频](https://www.bilibili.com/video/BV1b3wmzMEbA/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 
 ### 串级PID控制系统设计
 该项目设计了两个串级控制系统，分别是平衡(外环角度内环角速度)和定高(外环高度内环速度)
