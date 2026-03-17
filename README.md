@@ -8,7 +8,7 @@
 ## 项目预览
 ![项目展示](制作过程/成品展示.jpg)
 [跳转项目演示视频](https://www.bilibili.com/video/BV1RCw4zRELT/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
-
+[跳转项目演示视频2](https://www.bilibili.com/video/BV17owUzxESK/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 ## 项目功能
 🔓 遥控解锁与安全机制
 设计油门解锁状态机，通过“油门先上后下”动作实现2.4G无线通信解锁，防止误触启动；电源任务实时监控通信状态，未接收到遥控指令时自动关机，有效节省电量。
@@ -377,8 +377,8 @@ void Common_Serial_PID(Single_PID_Handle_t *outter_pid, Single_PID_Handle_t *inn
 [串级PID测试视频](https://www.bilibili.com/video/BV1FawSzaEfW/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 [串级PID附加测试视频](https://www.bilibili.com/video/BV1cawSzaE7i/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 
-[偏航角内环测试视频]()
-[总体测试视频]()
+[偏航角内环测试视频](https://www.bilibili.com/video/BV17owUzxEPJ/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+[总体测试视频](https://www.bilibili.com/video/BV17owUzxESK/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
 
 ![串级PID](制作过程/串级PID结果.jpg)
 
