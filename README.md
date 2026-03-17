@@ -367,7 +367,13 @@ void Common_Serial_PID(Single_PID_Handle_t *outter_pid, Single_PID_Handle_t *inn
 ```
 由于这是一个对称的四旋翼，所以只需要调出俯仰角的内外环PID参数，横滚角和偏航角的PID参数也是一样的
 ### 参数整定测试视频
-
+![参数整定](制作过程/参数整定.jpg)
+[无PID测试视频](https://www.bilibili.com/video/BV1FewSzcEeN/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+[内环纯比例测试视频](https://www.bilibili.com/video/BV1cawSzaEwV/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+[内环PD测试视频](https://www.bilibili.com/video/BV1cawSzaE5v/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+[串级PID测试视频](https://www.bilibili.com/video/BV1FawSzaEfW/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+[串级PID附加测试视频](https://www.bilibili.com/video/BV1cawSzaE7i/?vd_source=95764cfd8bb1371dc92f356cd7f2fb75)
+![串级PID](制作过程/串级PID结果.jpg)
 
 
 >再次感谢原项目作者的杰出工作
